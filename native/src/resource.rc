@@ -1,0 +1,37 @@
+#include <winver.h>
+
+1 ICON "../../assets/periphhub.ico"
+1 24 "app.manifest"
+
+// Embedded standalone assets (RCDATA = 10) for single-EXE distribution.
+101 10 "../../web/index.html"
+102 10 "../../web/tailwind.js"
+105 10 "../../third_party/webview2/x64/WebView2Loader.dll"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     0,2,0,0
+PRODUCTVERSION  0,2,0,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0x0L
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404B0"
+        BEGIN
+            VALUE "CompanyName",      "PeriphHub"
+            VALUE "FileDescription",  "PeriphHub Wireless Peripheral & Mouse Driver Center"
+            VALUE "FileVersion",      "0.2.0.0"
+            VALUE "InternalName",     "PeriphHub"
+            VALUE "OriginalFilename", "PeriphHub.exe"
+            VALUE "ProductName",      "PeriphHub"
+            VALUE "ProductVersion",   "0.2.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0804, 1200
+    END
+END

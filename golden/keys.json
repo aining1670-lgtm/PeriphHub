@@ -1,0 +1,542 @@
+[
+  {
+    "code": "KeyA",
+    "label": "A",
+    "usage": 4
+  },
+  {
+    "code": "KeyB",
+    "label": "B",
+    "usage": 5
+  },
+  {
+    "code": "KeyC",
+    "label": "C",
+    "usage": 6
+  },
+  {
+    "code": "KeyD",
+    "label": "D",
+    "usage": 7
+  },
+  {
+    "code": "KeyE",
+    "label": "E",
+    "usage": 8
+  },
+  {
+    "code": "KeyF",
+    "label": "F",
+    "usage": 9
+  },
+  {
+    "code": "KeyG",
+    "label": "G",
+    "usage": 10
+  },
+  {
+    "code": "KeyH",
+    "label": "H",
+    "usage": 11
+  },
+  {
+    "code": "KeyI",
+    "label": "I",
+    "usage": 12
+  },
+  {
+    "code": "KeyJ",
+    "label": "J",
+    "usage": 13
+  },
+  {
+    "code": "KeyK",
+    "label": "K",
+    "usage": 14
+  },
+  {
+    "code": "KeyL",
+    "label": "L",
+    "usage": 15
+  },
+  {
+    "code": "KeyM",
+    "label": "M",
+    "usage": 16
+  },
+  {
+    "code": "KeyN",
+    "label": "N",
+    "usage": 17
+  },
+  {
+    "code": "KeyO",
+    "label": "O",
+    "usage": 18
+  },
+  {
+    "code": "KeyP",
+    "label": "P",
+    "usage": 19
+  },
+  {
+    "code": "KeyQ",
+    "label": "Q",
+    "usage": 20
+  },
+  {
+    "code": "KeyR",
+    "label": "R",
+    "usage": 21
+  },
+  {
+    "code": "KeyS",
+    "label": "S",
+    "usage": 22
+  },
+  {
+    "code": "KeyT",
+    "label": "T",
+    "usage": 23
+  },
+  {
+    "code": "KeyU",
+    "label": "U",
+    "usage": 24
+  },
+  {
+    "code": "KeyV",
+    "label": "V",
+    "usage": 25
+  },
+  {
+    "code": "KeyW",
+    "label": "W",
+    "usage": 26
+  },
+  {
+    "code": "KeyX",
+    "label": "X",
+    "usage": 27
+  },
+  {
+    "code": "KeyY",
+    "label": "Y",
+    "usage": 28
+  },
+  {
+    "code": "KeyZ",
+    "label": "Z",
+    "usage": 29
+  },
+  {
+    "code": "Digit1",
+    "label": "1",
+    "usage": 30
+  },
+  {
+    "code": "Digit2",
+    "label": "2",
+    "usage": 31
+  },
+  {
+    "code": "Digit3",
+    "label": "3",
+    "usage": 32
+  },
+  {
+    "code": "Digit4",
+    "label": "4",
+    "usage": 33
+  },
+  {
+    "code": "Digit5",
+    "label": "5",
+    "usage": 34
+  },
+  {
+    "code": "Digit6",
+    "label": "6",
+    "usage": 35
+  },
+  {
+    "code": "Digit7",
+    "label": "7",
+    "usage": 36
+  },
+  {
+    "code": "Digit8",
+    "label": "8",
+    "usage": 37
+  },
+  {
+    "code": "Digit9",
+    "label": "9",
+    "usage": 38
+  },
+  {
+    "code": "Digit0",
+    "label": "0",
+    "usage": 39
+  },
+  {
+    "code": "F1",
+    "label": "F1",
+    "usage": 58
+  },
+  {
+    "code": "F2",
+    "label": "F2",
+    "usage": 59
+  },
+  {
+    "code": "F3",
+    "label": "F3",
+    "usage": 60
+  },
+  {
+    "code": "F4",
+    "label": "F4",
+    "usage": 61
+  },
+  {
+    "code": "F5",
+    "label": "F5",
+    "usage": 62
+  },
+  {
+    "code": "F6",
+    "label": "F6",
+    "usage": 63
+  },
+  {
+    "code": "F7",
+    "label": "F7",
+    "usage": 64
+  },
+  {
+    "code": "F8",
+    "label": "F8",
+    "usage": 65
+  },
+  {
+    "code": "F9",
+    "label": "F9",
+    "usage": 66
+  },
+  {
+    "code": "F10",
+    "label": "F10",
+    "usage": 67
+  },
+  {
+    "code": "F11",
+    "label": "F11",
+    "usage": 68
+  },
+  {
+    "code": "F12",
+    "label": "F12",
+    "usage": 69
+  },
+  {
+    "code": "F13",
+    "label": "F13",
+    "usage": 104
+  },
+  {
+    "code": "Minus",
+    "label": "-",
+    "usage": 45
+  },
+  {
+    "code": "Equal",
+    "label": "=",
+    "usage": 46
+  },
+  {
+    "code": "BracketLeft",
+    "label": "[",
+    "usage": 47
+  },
+  {
+    "code": "BracketRight",
+    "label": "]",
+    "usage": 48
+  },
+  {
+    "code": "Backslash",
+    "label": "|",
+    "usage": 49
+  },
+  {
+    "code": "Semicolon",
+    "label": ";",
+    "usage": 51
+  },
+  {
+    "code": "Quote",
+    "label": "'",
+    "usage": 52
+  },
+  {
+    "code": "Comma",
+    "label": "<",
+    "usage": 54
+  },
+  {
+    "code": "Period",
+    "label": ">",
+    "usage": 55
+  },
+  {
+    "code": "Slash",
+    "label": "?",
+    "usage": 56
+  },
+  {
+    "code": "Backquote",
+    "label": "~",
+    "usage": 53
+  },
+  {
+    "code": "Backspace",
+    "label": "Back",
+    "usage": 42
+  },
+  {
+    "code": "Enter",
+    "label": "Enter",
+    "usage": 40
+  },
+  {
+    "code": "Space",
+    "label": "Space",
+    "usage": 44
+  },
+  {
+    "code": "Escape",
+    "label": "Esc",
+    "usage": 41
+  },
+  {
+    "code": "Tab",
+    "label": "Tab",
+    "usage": 43
+  },
+  {
+    "code": "CapsLock",
+    "label": "CapsLk",
+    "usage": 57
+  },
+  {
+    "code": "ContextMenu",
+    "label": "App",
+    "usage": 101
+  },
+  {
+    "code": "ControlLeft",
+    "label": "Ctrl",
+    "usage": 224
+  },
+  {
+    "code": "ShiftLeft",
+    "label": "Shift",
+    "usage": 225
+  },
+  {
+    "code": "AltLeft",
+    "label": "Alt",
+    "usage": 226
+  },
+  {
+    "code": "MetaLeft",
+    "label": "Win",
+    "usage": 227
+  },
+  {
+    "code": "ControlRight",
+    "label": "RCtrl",
+    "usage": 228
+  },
+  {
+    "code": "ShiftRight",
+    "label": "RShift",
+    "usage": 229
+  },
+  {
+    "code": "AltRight",
+    "label": "RAlt",
+    "usage": 230
+  },
+  {
+    "code": "MetaRight",
+    "label": "RWin",
+    "usage": 231
+  },
+  {
+    "code": "Pause",
+    "label": "Pause",
+    "usage": 72
+  },
+  {
+    "code": "ScrollLock",
+    "label": "ScrLk",
+    "usage": 71
+  },
+  {
+    "code": "Insert",
+    "label": "Ins",
+    "usage": 73
+  },
+  {
+    "code": "Home",
+    "label": "Home",
+    "usage": 74
+  },
+  {
+    "code": "PageUp",
+    "label": "PgUp",
+    "usage": 75
+  },
+  {
+    "code": "Delete",
+    "label": "Del",
+    "usage": 76
+  },
+  {
+    "code": "End",
+    "label": "End",
+    "usage": 77
+  },
+  {
+    "code": "PageDown",
+    "label": "PgDn",
+    "usage": 78
+  },
+  {
+    "code": "ArrowLeft",
+    "label": "Left",
+    "usage": 80
+  },
+  {
+    "code": "ArrowUp",
+    "label": "Up",
+    "usage": 82
+  },
+  {
+    "code": "ArrowDown",
+    "label": "Down",
+    "usage": 81
+  },
+  {
+    "code": "ArrowRight",
+    "label": "Right",
+    "usage": 79
+  },
+  {
+    "code": "NumLock",
+    "label": "NumLk",
+    "usage": 83
+  },
+  {
+    "code": "NumpadEnter",
+    "label": "NumEnter",
+    "usage": 88
+  },
+  {
+    "code": "NumpadDivide",
+    "label": "Num/",
+    "usage": 84
+  },
+  {
+    "code": "NumpadMultiply",
+    "label": "Num*",
+    "usage": 85
+  },
+  {
+    "code": "NumpadSubtract",
+    "label": "Num-",
+    "usage": 86
+  },
+  {
+    "code": "NumpadAdd",
+    "label": "Num+",
+    "usage": 87
+  },
+  {
+    "code": "NumpadDecimal",
+    "label": "Num.",
+    "usage": 99
+  },
+  {
+    "code": "Numpad1",
+    "label": "Num1",
+    "usage": 89
+  },
+  {
+    "code": "Numpad2",
+    "label": "Num2",
+    "usage": 90
+  },
+  {
+    "code": "Numpad3",
+    "label": "Num3",
+    "usage": 91
+  },
+  {
+    "code": "Numpad4",
+    "label": "Num4",
+    "usage": 92
+  },
+  {
+    "code": "Numpad5",
+    "label": "Num5",
+    "usage": 93
+  },
+  {
+    "code": "Numpad6",
+    "label": "Num6",
+    "usage": 94
+  },
+  {
+    "code": "Numpad7",
+    "label": "Num7",
+    "usage": 95
+  },
+  {
+    "code": "Numpad8",
+    "label": "Num8",
+    "usage": 96
+  },
+  {
+    "code": "Numpad9",
+    "label": "Num9",
+    "usage": 97
+  },
+  {
+    "code": "Numpad0",
+    "label": "Num0",
+    "usage": 98
+  },
+  {
+    "code": "IntlBackslash",
+    "label": "K45",
+    "usage": 100
+  },
+  {
+    "code": "LButton",
+    "label": "LButton",
+    "usage": 240
+  },
+  {
+    "code": "RButton",
+    "label": "RButton",
+    "usage": 241
+  },
+  {
+    "code": "MButton",
+    "label": "MButton",
+    "usage": 242
+  }
+]

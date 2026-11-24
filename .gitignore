@@ -1,0 +1,25 @@
+build/
+dist/
+out/
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+.webview2/
+node_modules/
+*.log
+
+# local test & IDE artifacts
+iltest/
+.vscode/
+.idea/
+*.user
+Thumbs.db
+.DS_Store
+
+# agent scratch (not shipped)
+.research/
+.acl-recovery/
+.workbuddy/
+.zcode/
