@@ -135,5 +135,5 @@
 - [ ] `make clean && make` **零编译警告（0 warning）**
 - [ ] `make test` 全部纯 C++ 单测通过，且包含新增设备的 `<vendor>_protocol_test`
 - [ ] 使用 `node tools/check_bridge_json.js <exe>` 验证 `--bridge` JSON 与退出码（`ok:true` 返回 0，`ok:false` 返回 1）
-- [ ] 若改动了 `web/index.html`，确认无新增硬编码设备 `key` 前缀分支，并通过 `--webview-selftest`
+- [ ] 若改动了 `web-next/`（并重新生成 `web/index.html`），确认无新增硬编码设备 `key` 前缀分支，并通过 `--webview-selftest`
 - [ ] 附带真机验证记录（`--list-json` 输出、至少一组参数写入与回读对比）

@@ -5,12 +5,11 @@
 
 // Embedded standalone assets (RCDATA = 10) for single-EXE distribution.
 101 10 "../../web/index.html"
-102 10 "../../web/tailwind.js"
 105 10 "../../third_party/webview2/x64/WebView2Loader.dll"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION     0,2,0,0
-PRODUCTVERSION  0,2,0,0
+FILEVERSION     1,1,0,0
+PRODUCTVERSION  1,1,0,0
 FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
 FILEFLAGS       0x0L
 FILEOS          VOS_NT_WINDOWS32
@@ -23,11 +22,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "PeriphHub"
             VALUE "FileDescription",  "PeriphHub Wireless Peripheral & Mouse Driver Center"
-            VALUE "FileVersion",      "0.2.0.0"
+            VALUE "FileVersion",      "1.1.0.0"
             VALUE "InternalName",     "PeriphHub"
             VALUE "OriginalFilename", "PeriphHub.exe"
             VALUE "ProductName",      "PeriphHub"
-            VALUE "ProductVersion",   "0.2.0"
+            VALUE "ProductVersion",   "1.1.0"
         END
     END
     BLOCK "VarFileInfo"

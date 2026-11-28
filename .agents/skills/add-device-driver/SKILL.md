@@ -73,7 +73,7 @@ Read these before writing code so schemas and bridge contracts stay exact:
 ## Step 3: Implement in Strict Layer Order
 
 Do **not** modify `main.cpp`'s `BridgeHandler` dispatch or add hardcoded
-`deviceKey` prefix checks in `web/index.html`.
+`deviceKey` prefix checks in `web-next/src/` (bundled into `web/index.html`).
 
 1. **Protocol pure functions** — `native/src/<vendor>_protocol.{h,cpp}`
    - Zero Win32 headers (`<windows.h>` forbidden here) so tests run hardware-free.
@@ -116,7 +116,7 @@ Before running verification, confirm every item:
 - [ ] **Liveness check**: Wireless devices check awake state before writes and
       report sleeping devices explicitly.
 - [ ] **RMW preservation**: Untouched bytes/bits in whole-frame writes are preserved.
-- [ ] **Zero UI hardcoding**: `web/index.html` renders purely from `capabilities`
+- [ ] **Zero UI hardcoding**: `web-next/src/` (`web/index.html`) renders purely from `capabilities`
       and `driver`; no new `deviceKey` prefix branches.
 
 ## Step 5: Verify & Hand Off

@@ -8,6 +8,8 @@ out/
 *.ilk
 .webview2/
 node_modules/
+web-next/node_modules/
+web-next/dist/
 *.log
 
 # local test & IDE artifacts

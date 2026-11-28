@@ -24,7 +24,7 @@ wWinMain
 | 协议纯函数 | `native/src/*_protocol.*` | 无 Win32 依赖，可单测；字节级事实唯一来源（Incott / YJX / ROYUAN） |
 | 设备 IO | `native/src/*_hid.*` & `peripherals.*` | 打开/枚举/Feature/Output；互斥锁；超时 ≤ 4s；多源外设扫描合并 |
 | 驱动注册与分发 | `native/src/drivers/` | `registry.*` 按 `deviceKey` 前缀路由到对应后端并构建 `capabilities`；`builtin.cpp` 统一注册 |
-| 桥 | `native/src/bridge.*` & `web/index.html` | JSON 指令 ↔ C++ 调用；前端依据 `driver` 与 `capabilities` 渲染 |
+| 桥与界面 | `native/src/bridge.*`、`web-next/src/` → `web/index.html` | JSON 指令 ↔ C++ 调用；前端依据 `driver` 与 `capabilities` 渲染（详见 [Web 控制台架构](11-web-console-architecture.md)） |
 
 UI 只通过桥说话，不直接持有句柄、不直接算字节。
 

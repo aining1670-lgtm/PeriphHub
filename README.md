@@ -8,8 +8,13 @@
 
 > **关于项目**：PeriphHub 是个人独立开源项目，内置驱动围绕作者自用的几款鼠键适配（**Incott G23、Ksnake X11、ROYUAN AKOS BC98**），并非全品牌通用驱动。如果你想接入自己的设备，仓库已留好外部电量探针接口、驱动注册规范与开发文档。
 
-![PeriphHub 全部外设总览与任务栏电量条预览](docs/assets/overview.png)
-![PeriphHub 鼠标驱动配置界面](docs/assets/mouse-driver.jpg)
+![PeriphHub 2.5D 外设陈列架总览](docs/assets/overview.jpg)
+
+| 键盘驱动工作台（98 键改键 / 宏 / 灯效） | 通用蓝牙外设电量监控 |
+|---|---|
+| ![AKOS BC98 键盘驱动工作台](docs/assets/keyboard-workbench.jpg) | ![蓝牙外设实时电量监控](docs/assets/battery-monitor.jpg) |
+
+> 任务栏常驻电量条效果：<img src="docs/assets/taskbar-strip.png" alt="Windows 任务栏实时电量条" height="24" align="absmiddle" />
 
 ## 为什么用 PeriphHub
 
@@ -63,10 +68,13 @@
 
 ### 编译环境
 - MSYS2 / MinGW-w64（`g++` C++17、`windres`、`make`）
-- Node.js（可选，用于运行 `--bridge` JSON 契约检查）
+- Node.js 20+（仅修改 `web-next/` 前端源码或运行 `--bridge` 契约检查时需要；仓库已内置编译好的单文件 `web/index.html`，纯编译 C++ 可直接运行 `make`）
 
 ```bash
 export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
+
+# （可选）修改 web-next/ 前端源码后重新生成单文件 web/index.html
+(cd web-next && npm install && npm run build && cp dist/index.html ../web/index.html)
 
 make          # 编译 build/PeriphHub.exe
 make test     # 运行硬件无关的 C++ 单元测试
@@ -75,7 +83,7 @@ make dist     # 打包单文件独立可执行程序到 dist/PeriphHub/PeriphHub
 
 ### 扩展你自己的设备
 - **只接入电量显示**：参考 [外部电量探针协议](docs/09-external-probe.md) 与示例 [`examples/battery-probe/battery_probe.cpp`](examples/battery-probe/battery_probe.cpp)，用任意语言实现一个 `battery-probe.exe --json` 即可免编译接入。
-- **接入完整鼠标/键盘驱动**：参考 [添加新设备指南](docs/10-adding-a-device.md) 与 [系统架构说明](docs/01-architecture.md)，在 `native/src/drivers/` 下注册新驱动并声明 `capabilities`，无需重写托盘、任务栏电量条与 WebView2 界面。
+- **接入完整鼠标/键盘驱动**：参考 [添加新设备指南](docs/10-adding-a-device.md)、[系统架构说明](docs/01-architecture.md) 与 [Web 控制台架构](docs/11-web-console-architecture.md)，在 `native/src/drivers/` 下注册新驱动并声明 `capabilities`，无需重写托盘、任务栏电量条与 WebView2 界面。
 
 <details>
 <summary>常用命令行参数（点击展开）</summary>
