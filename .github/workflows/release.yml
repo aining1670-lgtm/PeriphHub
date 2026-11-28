@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            make
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build, test, and package dist
+        run: |
+          mkdir -p /c/Temp
+          make clean
+          make CXX='TMP=/c/Temp g++'
+          make test CXX='TMP=/c/Temp g++'
+          make probe-example CXX='TMP=/c/Temp g++'
+          make dist CXX='TMP=/c/Temp g++'
+
+      - name: Verify --bridge JSON contract and --help
+        shell: pwsh
+        run: |
+          node tools/check_bridge_json.js build/PeriphHub.exe
+          .\build\PeriphHub.exe --help
+
+      - name: Generate SHA-256 checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash dist/PeriphHub/PeriphHub.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  PeriphHub.exe" | Set-Content -Encoding ascii dist/PeriphHub/PeriphHub.exe.sha256
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/PeriphHub/PeriphHub.exe
+            dist/PeriphHub/PeriphHub.exe.sha256

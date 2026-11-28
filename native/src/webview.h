@@ -28,6 +28,7 @@ public:
     bool Start(HWND parent, const std::wstring& page_path, Handler handler, std::wstring& error);
 
     void Resize(int width, int height);
+    void SetBackgroundColor(COLORREF rgb);
     void Close();
     void PostJson(const std::string& json);
 

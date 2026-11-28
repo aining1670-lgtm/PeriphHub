@@ -26,6 +26,8 @@ __CRT_UUID_DECL(ICoreWebView2WebMessageReceivedEventHandler, 0x57213f19, 0x00e6,
                 0x89, 0x8e, 0xa0, 0x1e, 0xcb, 0xd2)
 __CRT_UUID_DECL(ICoreWebView2NavigationStartingEventHandler, 0x9adbe429, 0xf36d, 0x432b,
                 0x9d, 0xdc, 0xf8, 0x88, 0x1f, 0xbd, 0x76, 0xe3)
+__CRT_UUID_DECL(ICoreWebView2NavigationCompletedEventHandler, 0xd33a35bf, 0x1c49, 0x4f98,
+                0x93, 0xab, 0x00, 0x6e, 0x05, 0x33, 0xfe, 0x1c)
 __CRT_UUID_DECL(ICoreWebView2NewWindowRequestedEventHandler, 0xd4c185fe, 0xc81c, 0x4989,
                 0x97, 0xaf, 0x2d, 0x3f, 0xa7, 0xab, 0x56, 0x51)
 
@@ -165,6 +167,25 @@ public:
 
 private:
     ~NewWindowRequested() = default;
+    Fn fn_;
+};
+
+class NavigationCompleted final : public ICoreWebView2NavigationCompletedEventHandler {
+public:
+    using Fn = std::function<void(ICoreWebView2NavigationCompletedEventArgs*)>;
+
+    explicit NavigationCompleted(Fn fn) : fn_(std::move(fn)) {}
+
+    HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2*,
+                                     ICoreWebView2NavigationCompletedEventArgs* args) override {
+        if (fn_) fn_(args);
+        return S_OK;
+    }
+
+    PERIPHHUB_COM_OBJECT(ICoreWebView2NavigationCompletedEventHandler)
+
+private:
+    ~NavigationCompleted() = default;
     Fn fn_;
 };
 
@@ -355,9 +376,8 @@ bool EnsureEmbeddedWebAssets(const std::wstring& root_dir, std::wstring* index_o
     CreateDirectoryW(web_dir.c_str(), nullptr);
 
     const std::wstring idx = web_dir + L"\\index.html";
-    const std::wstring tw = web_dir + L"\\tailwind.js";
 
-    if (!ExtractRcDataToFile(101, idx) || !ExtractRcDataToFile(102, tw)) {
+    if (!ExtractRcDataToFile(101, idx)) {
         return false;
     }
     if (index_out != nullptr) *index_out = idx;
@@ -382,6 +402,7 @@ struct Host::Impl final : public std::enable_shared_from_this<Host::Impl> {
     std::wstring error;
     int width = 0;
     int height = 0;
+    COLORREF bg_color = RGB(11, 12, 16);
     bool started = false;
     // Bumped by Close(): callbacks that were scheduled by an older generation are
     // ignored, so a late WebView2 completion can never touch a closed host.
@@ -391,10 +412,13 @@ struct Host::Impl final : public std::enable_shared_from_this<Host::Impl> {
     ICoreWebView2* page = nullptr;
     EventRegistrationToken message_token{};
     EventRegistrationToken navigation_token{};
+    EventRegistrationToken nav_completed_token{};
     EventRegistrationToken new_window_token{};
     bool message_registered = false;
     bool navigation_registered = false;
+    bool nav_completed_registered = false;
     bool new_window_registered = false;
+    bool revealed = false;
 
     bool Live(unsigned long long gen) const { return !closed && generation == gen; }
 
@@ -404,6 +428,8 @@ struct Host::Impl final : public std::enable_shared_from_this<Host::Impl> {
     void OnMessage(const std::wstring& json, const std::wstring& source);
     void PostJson(const std::string& json);
     void ApplyBounds();
+    void ApplyBackgroundColor();
+    void Reveal();
     void Shutdown();
 };
 
@@ -445,6 +471,9 @@ void Host::Impl::OnController(unsigned long long gen, HRESULT result,
     controller = created;
     controller->AddRef();
     ApplyBounds();
+    ApplyBackgroundColor();
+    revealed = false;
+    controller->put_IsVisible(FALSE);
 
     if (FAILED(controller->get_CoreWebView2(&page)) || page == nullptr) {
         page = nullptr;
@@ -506,6 +535,17 @@ void Host::Impl::OnController(unsigned long long gen, HRESULT result,
     }
     popup_handler->Release();
 
+    auto* completed_handler = new NavigationCompleted(
+        [weak, gen](ICoreWebView2NavigationCompletedEventArgs*) {
+            if (auto self = weak.lock(); self != nullptr && self->Live(gen)) {
+                self->Reveal();
+            }
+        });
+    if (SUCCEEDED(page->add_NavigationCompleted(completed_handler, &nav_completed_token))) {
+        nav_completed_registered = true;
+    }
+    completed_handler->Release();
+
     page->Navigate(url.c_str());
     started = true;
 }
@@ -513,6 +553,7 @@ void Host::Impl::OnController(unsigned long long gen, HRESULT result,
 void Host::Impl::OnMessage(const std::wstring& json, const std::wstring& source) {
     if (closed || page == nullptr) return;
     if (!IsPageUrl(page_url, source)) return;
+    if (!revealed) Reveal();
 
     const std::string request = text::ToUtf8(json);
     if (request.empty()) return;
@@ -559,24 +600,51 @@ void Host::Impl::ApplyBounds() {
     controller->put_Bounds(bounds);
 }
 
+void Host::Impl::ApplyBackgroundColor() {
+    if (controller == nullptr) return;
+    ICoreWebView2Controller2* controller2 = nullptr;
+    if (SUCCEEDED(controller->QueryInterface(IID_ICoreWebView2Controller2,
+                                             reinterpret_cast<void**>(&controller2))) &&
+        controller2 != nullptr) {
+        const COREWEBVIEW2_COLOR color{
+            255,
+            GetRValue(bg_color),
+            GetGValue(bg_color),
+            GetBValue(bg_color),
+        };
+        controller2->put_DefaultBackgroundColor(color);
+        controller2->Release();
+    }
+}
+
+void Host::Impl::Reveal() {
+    if (revealed || closed || controller == nullptr) return;
+    revealed = true;
+    controller->put_IsVisible(TRUE);
+}
+
 void Host::Impl::Shutdown() {
     if (closed) return;
     closed = true;
     started = false;
+    revealed = false;
     ++generation;
 
     if (page != nullptr) {
         if (message_registered) page->remove_WebMessageReceived(message_token);
         if (navigation_registered) page->remove_NavigationStarting(navigation_token);
+        if (nav_completed_registered) page->remove_NavigationCompleted(nav_completed_token);
         if (new_window_registered) page->remove_NewWindowRequested(new_window_token);
         message_registered = false;
         navigation_registered = false;
+        nav_completed_registered = false;
         new_window_registered = false;
         page->Release();
         page = nullptr;
     }
     message_token = EventRegistrationToken{};
     navigation_token = EventRegistrationToken{};
+    nav_completed_token = EventRegistrationToken{};
     new_window_token = EventRegistrationToken{};
 
     if (controller != nullptr) {
@@ -697,6 +765,11 @@ void Host::Resize(int width, int height) {
     impl_->width = width;
     impl_->height = height;
     impl_->ApplyBounds();
+}
+
+void Host::SetBackgroundColor(COLORREF rgb) {
+    impl_->bg_color = rgb;
+    impl_->ApplyBackgroundColor();
 }
 
 void Host::Close() {

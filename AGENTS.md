@@ -7,7 +7,7 @@ Instructions for AI coding agents working in the **PeriphHub** repository.
 PeriphHub is a Windows system-tray / taskbar peripheral battery monitor and gaming mouse/keyboard driver utility built with a **"native C++17 host + offline WebView2 UI"** architecture:
 
 - **Native host (`native/src/`)**: C++17 Win32 application (MinGW-w64) handling single-instance mutex, tray icon with dynamic battery badge, translucent taskbar battery strip, background polling, multi-source peripheral discovery (Incott / YJX / ROYUAN / Bluetooth / HID Battery / XInput / external `battery-probe`), and all HID communication.
-- **Web UI (`web/`)**: Single-file offline HTML/CSS/JS (`web/index.html` + local `web/tailwind.js`, zero npm dependencies) hosted in WebView2 via `chrome.webview.postMessage` JSON IPC. No local HTTP server or TCP port is ever opened.
+- **Web UI (`web-next/` → `web/index.html`)**: React 19 + TypeScript + Tailwind CSS v4 + Zustand source under `web-next/`, bundled via Vite + `vite-plugin-singlefile` into the single-file offline `web/index.html` hosted in WebView2 via `chrome.webview.postMessage` JSON IPC. No local HTTP server or TCP port is ever opened.
 - **Packaging**: Web assets and `WebView2Loader.dll` are embedded as `RCDATA` resources via `native/src/resource.rc`; `make dist` produces a standalone `dist/PeriphHub/PeriphHub.exe`.
 
 ## Architecture & Repository Map
@@ -19,7 +19,7 @@ Maintain strict separation across four layers:
 | Protocol pure functions | `native/src/protocol.*`, `yjx_protocol.*`, `royuan_protocol.*`, `command_json.*`, `json.*`, `macro_json.*`, `peripheral_merge.*` | Zero Win32 dependencies; hardware-free unit-testable; single source of truth for wire bytes and JSON schemas |
 | Device IO | `native/src/hid.*`, `yjx_hid.*`, `royuan_hid.*`, `peripherals.*` | HID/Bluetooth/XInput enumeration, Feature/Output reports, retries, timeouts, and locking |
 | Driver registry & routing | `native/src/drivers/` (`registry.*`, `builtin_caps.*`, `builtin.cpp`, `yjx_driver.*`, `royuan_driver.*`), `driver_router.*` | Routes `deviceKey` to backend drivers and declares device `capabilities` |
-| Bridge & UI | `native/src/main.cpp`, `bridge.*`, `bridge_args.*`, `webview.*`, `widget.*`, `brands.*`, `web/index.html` | JSON IPC (`{"id":1,"cmd":"...","args":{...}}` ↔ `{"id":1,"ok":true,"data":{...}}`); UI renders strictly from bridge `driver` and `capabilities` and never manipulates HID handles or raw bytes |
+| Bridge & UI | `native/src/main.cpp`, `bridge.*`, `bridge_args.*`, `webview.*`, `widget.*`, `brands.*`, `web-next/src/`, `web/index.html` | JSON IPC (`{"id":1,"cmd":"...","args":{...}}` ↔ `{"id":1,"ok":true,"data":{...}}`); UI renders strictly from bridge `driver` and `capabilities` and never manipulates HID handles or raw bytes |
 
 Other directories:
 
@@ -33,6 +33,7 @@ Other directories:
 Environment: **MSYS2 / MinGW-w64** (`g++` C++17, static runtime).
 
 ```bash
+# Frontend (when editing web-next/): (cd web-next && npm run build && cp dist/index.html ../web/index.html)
 export PATH="/c/msys64/usr/bin:/c/msys64/mingw64/bin:$PATH"
 
 # Kill any running instance before relinking
@@ -101,6 +102,7 @@ Hardware & WebView2 verification commands (require a desktop session and awake d
 Read the relevant reference doc before modifying a subsystem:
 
 - Architecture: [`docs/01-architecture.md`](docs/01-architecture.md)
+- Web console architecture (`web-next/`): [`docs/11-web-console-architecture.md`](docs/11-web-console-architecture.md)
 - Bridge JSON protocol & commands: [`docs/02-bridge-protocol.md`](docs/02-bridge-protocol.md)
 - Hardware & firmware constraints: [`docs/05-firmware-constraints.md`](docs/05-firmware-constraints.md)
 - External battery probe protocol: [`docs/09-external-probe.md`](docs/09-external-probe.md)

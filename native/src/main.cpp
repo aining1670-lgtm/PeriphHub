@@ -1,6 +1,7 @@
 // PeriphHub — native host shell.
 // Tray icon, taskbar battery widget, and WebView2 settings host.
 #include <windows.h>
+#include <dbt.h>
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -62,6 +63,9 @@ constexpr UINT_PTR kPollTimer = 2;
 constexpr UINT_PTR kInitTimer = 3;
 constexpr UINT_PTR kRepositionTimer = 4;
 constexpr UINT_PTR kWebViewReadyTimer = 5;
+constexpr UINT_PTR kBootSyncTimer = 6;
+constexpr UINT_PTR kDeviceChangeTimer = 7;
+constexpr UINT_PTR kDeviceFollowupTimer = 8;
 constexpr int kDefaultLowBatteryThreshold = 15;
 constexpr int kDefaultPollIntervalSec = 30;
 
@@ -102,7 +106,16 @@ std::string g_pending_nav_key;
 std::set<std::string> g_low_notified_keys;
 std::string g_last_notified_device_key;
 bool g_light_taskbar = false;
+bool g_settings_dark = true;
 HICON g_dynamic_icon = nullptr;
+HDEVNOTIFY g_dev_notify = nullptr;
+int g_boot_sync_step = 0;
+int g_dev_followup_step = 0;
+std::string g_last_pushed_devices_json;
+
+COLORREF SettingsBackgroundColor(bool dark) {
+    return dark ? RGB(11, 12, 16) : RGB(238, 240, 244);
+}
 
 std::wstring Widen(const std::string& value);
 std::string Narrow(const std::wstring& value);
@@ -803,6 +816,32 @@ bool TryHandleWindowUiRequest(HWND hwnd, const std::string& request_json,
         SendMessageW(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
         return true;
     }
+    if (req.cmd == "window.resize") {
+        std::string edge;
+        if (req.args == nullptr || !req.args->GetString("edge", &edge) || edge.empty()) {
+            if (respond) respond(bridge::Failure(req, "window.resize needs valid args.edge"));
+            return true;
+        }
+        WPARAM ht = 0;
+        if (edge == "left") ht = HTLEFT;
+        else if (edge == "right") ht = HTRIGHT;
+        else if (edge == "top") ht = HTTOP;
+        else if (edge == "bottom") ht = HTBOTTOM;
+        else if (edge == "topLeft") ht = HTTOPLEFT;
+        else if (edge == "topRight") ht = HTTOPRIGHT;
+        else if (edge == "bottomLeft") ht = HTBOTTOMLEFT;
+        else if (edge == "bottomRight") ht = HTBOTTOMRIGHT;
+        if (ht == 0) {
+            if (respond) respond(bridge::Failure(req, "window.resize needs valid args.edge"));
+            return true;
+        }
+        if (respond) respond(bridge::Ok(req, "{}"));
+        if (!IsZoomed(hwnd)) {
+            ReleaseCapture();
+            SendMessageW(hwnd, WM_NCLBUTTONDOWN, ht, 0);
+        }
+        return true;
+    }
     if (req.cmd == "window.sysmenu") {
         int x = -1;
         int y = -1;
@@ -845,7 +884,12 @@ bool TryHandleWindowUiRequest(HWND hwnd, const std::string& request_json,
         if (req.args != nullptr) {
             req.args->GetBool("dark", &dark);
         }
+        g_settings_dark = dark;
         ApplyDwmDarkAttribute(hwnd, dark);
+        if (g_host != nullptr) {
+            g_host->SetBackgroundColor(SettingsBackgroundColor(dark));
+        }
+        InvalidateRect(hwnd, nullptr, TRUE);
         if (respond) respond(bridge::Ok(req, "{}"));
         return true;
     }
@@ -1067,6 +1111,11 @@ void EnqueueRequest(HWND window, const std::string& request,
 void EnqueueRefresh(HWND window) {
     {
         std::lock_guard<std::mutex> lock(g_job_mutex);
+        for (const WorkerJob& job : g_jobs) {
+            if (job.kind == WorkerJobKind::kRefresh && job.window == window) {
+                return;
+            }
+        }
         g_jobs.push_back(WorkerJob{WorkerJobKind::kRefresh, 0, window, {}, {}});
     }
     g_job_ready.notify_one();
@@ -1133,6 +1182,7 @@ std::string BridgeHandler(const std::string& request_json, bool* selftest_report
 LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
         case WM_CREATE: {
+            g_settings_dark = !ReadLightTaskbar();
             ConfigureCustomWindowFrame(hwnd);
             RECT client{};
             GetClientRect(hwnd, &client);
@@ -1149,6 +1199,7 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpa
             }
             std::wstring error;
             g_host = new webview::Host();
+            g_host->SetBackgroundColor(SettingsBackgroundColor(g_settings_dark));
             const auto handler = [hwnd](const std::string& request,
                                         std::function<void(std::string)> respond) {
                 if (TryHandleWindowUiRequest(hwnd, request, respond)) return;
@@ -1179,6 +1230,84 @@ LRESULT CALLBACK SettingsProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpa
                     SetTimer(hwnd, kWebViewReadyTimer, 500, nullptr);
                 }
             }
+            return 0;
+        }
+        case WM_ERASEBKGND: {
+            RECT rc{};
+            GetClientRect(hwnd, &rc);
+            HBRUSH brush = CreateSolidBrush(SettingsBackgroundColor(g_settings_dark));
+            FillRect(reinterpret_cast<HDC>(wparam), &rc, brush);
+            DeleteObject(brush);
+            return 1;
+        }
+        case WM_PAINT: {
+            PAINTSTRUCT ps{};
+            HDC hdc = BeginPaint(hwnd, &ps);
+            RECT rc{};
+            GetClientRect(hwnd, &rc);
+            const COLORREF bg = SettingsBackgroundColor(g_settings_dark);
+            const COLORREF ink = g_settings_dark ? RGB(243, 245, 248) : RGB(17, 20, 27);
+            const COLORREF muted = g_settings_dark ? RGB(155, 164, 180) : RGB(82, 91, 107);
+            HBRUSH bg_brush = CreateSolidBrush(bg);
+            FillRect(hdc, &rc, bg_brush);
+            DeleteObject(bg_brush);
+
+            UINT dpi = GetDpiForWindow(hwnd);
+            if (dpi == 0) dpi = GetDpiForSystem();
+            if (dpi == 0) dpi = 96;
+
+            HFONT title_font = CreateFontW(
+                -MulDiv(20, static_cast<int>(dpi), 96), 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE,
+                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+            HFONT sub_font = CreateFontW(
+                -MulDiv(12, static_cast<int>(dpi), 96), 0, 0, 0, FW_NORMAL, FALSE, FALSE,
+                FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+
+            const int prev_bk = SetBkMode(hdc, TRANSPARENT);
+            HGDIOBJ prev_font = SelectObject(hdc, title_font);
+
+            const wchar_t* title_txt = L"PeriphHub";
+            const wchar_t* sub_txt = L"正在启动控制台…";
+            SIZE title_sz{};
+            GetTextExtentPoint32W(hdc, title_txt, lstrlenW(title_txt), &title_sz);
+
+            SelectObject(hdc, sub_font);
+            SIZE sub_sz{};
+            GetTextExtentPoint32W(hdc, sub_txt, lstrlenW(sub_txt), &sub_sz);
+
+            const int dot_d = MulDiv(7, static_cast<int>(dpi), 96);
+            const int dot_gap = MulDiv(10, static_cast<int>(dpi), 96);
+            const int row_gap = MulDiv(10, static_cast<int>(dpi), 96);
+            const int total_title_w = dot_d + dot_gap + title_sz.cx;
+            const int block_h = title_sz.cy + row_gap + sub_sz.cy;
+            const int start_x = (rc.right - total_title_w) / 2;
+            const int start_y = (rc.bottom - block_h) / 2;
+
+            HBRUSH dot_brush = CreateSolidBrush(ink);
+            HGDIOBJ prev_brush = SelectObject(hdc, dot_brush);
+            HGDIOBJ prev_pen = SelectObject(hdc, GetStockObject(NULL_PEN));
+            const int dot_y = start_y + (title_sz.cy - dot_d) / 2;
+            Ellipse(hdc, start_x, dot_y, start_x + dot_d, dot_y + dot_d);
+            SelectObject(hdc, prev_pen);
+            SelectObject(hdc, prev_brush);
+            DeleteObject(dot_brush);
+
+            SelectObject(hdc, title_font);
+            SetTextColor(hdc, ink);
+            TextOutW(hdc, start_x + dot_d + dot_gap, start_y, title_txt, lstrlenW(title_txt));
+
+            SelectObject(hdc, sub_font);
+            SetTextColor(hdc, muted);
+            TextOutW(hdc, (rc.right - sub_sz.cx) / 2, start_y + title_sz.cy + row_gap, sub_txt,
+                     lstrlenW(sub_txt));
+
+            SelectObject(hdc, prev_font);
+            SetBkMode(hdc, prev_bk);
+            DeleteObject(title_font);
+            DeleteObject(sub_font);
+            EndPaint(hwnd, &ps);
             return 0;
         }
         case WM_NCCALCSIZE: {
@@ -1403,10 +1532,62 @@ LRESULT CALLBACK MainProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
                                   L"warning: no tray icon or taskbar widget; opening the settings window\n");
                     ShowSettings();
                 }
+                if (g_dev_notify == nullptr) {
+                    DEV_BROADCAST_DEVICEINTERFACE_W filter{};
+                    filter.dbcc_size = sizeof(filter);
+                    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+                    g_dev_notify = RegisterDeviceNotificationW(
+                        hwnd, &filter,
+                        DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+                }
                 EnqueueRefresh(hwnd);
+                g_boot_sync_step = 0;
+                SetTimer(hwnd, kBootSyncTimer, 2000, nullptr);
                 g_active_poll_sec = hub.poll_interval_sec;
                 SetTimer(hwnd, kPollTimer, static_cast<UINT>(g_active_poll_sec) * 1000u, nullptr);
                 SetTimer(hwnd, kRepositionTimer, 1000, nullptr);
+                return 0;
+            }
+            if (wparam == kBootSyncTimer) {
+                KillTimer(hwnd, kBootSyncTimer);
+                const std::vector<bridge::DeviceSnapshot> devices = bridge::Devices();
+                bool need_more = devices.empty();
+                for (const bridge::DeviceSnapshot& d : devices) {
+                    if (d.connected && d.mode == "wireless" && d.battery <= 0) {
+                        need_more = true;
+                        break;
+                    }
+                    if (d.connected && d.mode == "bluetooth" && d.battery < 0) {
+                        need_more = true;
+                        break;
+                    }
+                }
+                if (need_more && g_boot_sync_step < 3) {
+                    ++g_boot_sync_step;
+                    EnqueueRefresh(hwnd);
+                    const UINT next_ms = (g_boot_sync_step == 1) ? 3000u : 5000u;
+                    if (g_boot_sync_step < 3) {
+                        SetTimer(hwnd, kBootSyncTimer, next_ms, nullptr);
+                    }
+                }
+                return 0;
+            }
+            if (wparam == kDeviceChangeTimer) {
+                KillTimer(hwnd, kDeviceChangeTimer);
+                EnqueueRefresh(hwnd);
+                g_dev_followup_step = 1;
+                SetTimer(hwnd, kDeviceFollowupTimer, 2500, nullptr);
+                return 0;
+            }
+            if (wparam == kDeviceFollowupTimer) {
+                KillTimer(hwnd, kDeviceFollowupTimer);
+                EnqueueRefresh(hwnd);
+                if (g_dev_followup_step == 1) {
+                    g_dev_followup_step = 2;
+                    SetTimer(hwnd, kDeviceFollowupTimer, 3500, nullptr);
+                } else {
+                    g_dev_followup_step = 0;
+                }
                 return 0;
             }
             if (wparam == kRepositionTimer) {
@@ -1426,8 +1607,24 @@ LRESULT CALLBACK MainProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
             }
             return 0;
         }
+        case WM_DEVICECHANGE: {
+            if (wparam == DBT_DEVICEARRIVAL || wparam == DBT_DEVICEREMOVECOMPLETE ||
+                wparam == DBT_DEVNODES_CHANGED) {
+                g_dev_followup_step = 0;
+                KillTimer(hwnd, kDeviceFollowupTimer);
+                SetTimer(hwnd, kDeviceChangeTimer, 450, nullptr);
+            }
+            return TRUE;
+        }
         case kRefreshDoneMessage:
             UpdateDisplay();
+            if (g_host != nullptr && g_host->Started()) {
+                const std::string cur = bridge::DevicesJson();
+                if (cur != g_last_pushed_devices_json) {
+                    g_last_pushed_devices_json = cur;
+                    g_host->PostJson("{\"event\":\"device\",\"key\":\"*\",\"connected\":true}");
+                }
+            }
             return 0;
         case kTestNotifyMessage: {
             const HubSettings hub = SnapshotHubSettings();
@@ -1485,6 +1682,10 @@ LRESULT CALLBACK MainProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
             return 0;
         }
         case WM_DESTROY:
+            if (g_dev_notify != nullptr) {
+                UnregisterDeviceNotification(g_dev_notify);
+                g_dev_notify = nullptr;
+            }
             widget::Destroy();
             if (g_settings != nullptr) {
                 DestroyWindow(g_settings);
@@ -1518,7 +1719,7 @@ bool RegisterClasses() {
     settings_class.hIconSm = app_icon;
     settings_class.lpszClassName = kSettingsClass;
     settings_class.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    settings_class.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    settings_class.hbrBackground = nullptr;
     return RegisterClassExW(&settings_class) != 0;
 }
 
@@ -1590,12 +1791,28 @@ bool TryReadIncottSnapshotOnce(bridge::DeviceSnapshot* out, bool* not_found) {
 
     int battery = -1;
     int charging = -1;
+    bool asleep = false;
     incott::Frame status_reply{};
     const incott::Frame status_request = incott::MakeRead(incott::kCmdStatus, nullptr, 0);
     if (device.Feature(status_request.bytes, status_reply.bytes, error)) {
-        const incott::StatusInfo status = incott::ParseStatus(status_reply);
-        battery = status.battery;
-        charging = status.charging;
+        incott::StatusInfo status = incott::ParseStatus(status_reply);
+        // Cold boot / unlinked 2.4G receiver frequently replies 09 89 00 00 before the
+        // mouse checks in; retry once and treat persistent 0% (not charging) as asleep/unknown.
+        if (device.IsWireless() && status.battery == 0 && status.charging <= 0) {
+            Sleep(80);
+            incott::Frame retry_reply{};
+            if (device.Feature(status_request.bytes, retry_reply.bytes, error)) {
+                status = incott::ParseStatus(retry_reply);
+            }
+        }
+        if (device.IsWireless() && status.battery == 0 && status.charging <= 0) {
+            battery = -1;
+            charging = -1;
+            asleep = true;
+        } else {
+            battery = status.battery;
+            charging = status.charging;
+        }
     }
 
     wchar_t key[32]{};
@@ -1613,6 +1830,7 @@ bool TryReadIncottSnapshotOnce(bridge::DeviceSnapshot* out, bool* not_found) {
     snapshot.psd = info.psd;
     snapshot.battery = battery;
     snapshot.charging = charging;
+    snapshot.asleep = asleep;
     snapshot.connected = true;
     *out = std::move(snapshot);
     return true;
